@@ -20,6 +20,7 @@ import meteordevelopment.meteorclient.utils.misc.input.Input;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.option.KeyBinding;
+import net.minecraft.entity.ItemEntity;
 import net.minecraft.item.Items;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
@@ -29,6 +30,8 @@ import java.util.HashSet;
 public class ObbyRoof extends Module {
     private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
     private final HashSet<ChunkPos> completedChunks = new HashSet<>();
+
+    private ChunkPos origin;
 
     private final Setting<Integer> minObby = sgGeneral.add(new IntSetting.Builder()
         .name("min obby")
@@ -90,14 +93,17 @@ public class ObbyRoof extends Module {
                 Modules.get().get(EChestFarmer.class).toggle();
                 BaritoneAPI.getProvider().getPrimaryBaritone().getBuilderProcess().resume();
             } else {
-                setPressed(mc.options.forwardKey, true);
+                BaritoneAPI.getProvider().getPrimaryBaritone().getFollowProcess().follow(entity ->
+                    entity instanceof ItemEntity item && item.getStack().isOf(Items.OBSIDIAN));
+                setPressed(mc.options.jumpKey, true);
             }
         } else {
             if (numObby() <= minObby.get()) {
                 Modules.get().get(EChestFarmer.class).toggle();
                 BaritoneAPI.getProvider().getPrimaryBaritone().getBuilderProcess().pause();
             } else {
-                setPressed(mc.options.forwardKey, false);
+                BaritoneAPI.getProvider().getPrimaryBaritone().getFollowProcess().cancel();
+                setPressed(mc.options.jumpKey, false);
             }
         }
 
@@ -106,11 +112,6 @@ public class ObbyRoof extends Module {
         if (!isBuilding()) {
             beginBuilding();
         }
-    }
-
-    @Override
-    public void onDeactivate() {
-        setPressed(mc.options.forwardKey, false);
     }
 
     private void beginBuilding() {
@@ -130,12 +131,21 @@ public class ObbyRoof extends Module {
     }
 
     private ChunkPos findNextChunk(int searchRadius) {
-        assert this.mc.player != null;
-        ChunkPos center = this.mc.player.getChunkPos();
-        return ChunkPos.stream(center, searchRadius)
+        return ChunkPos.stream(origin, searchRadius)
             .filter(this::isAvailable)
             .findFirst()
             .orElseGet(() -> findNextChunk(searchRadius + 1));
+    }
+
+    @Override
+    public void onActivate() {
+        assert this.mc.player != null;
+        origin = this.mc.player.getChunkPos();
+    }
+
+    @Override
+    public void onDeactivate() {
+        setPressed(mc.options.jumpKey, false);
     }
 
     private boolean isAvailable(ChunkPos pos) {
