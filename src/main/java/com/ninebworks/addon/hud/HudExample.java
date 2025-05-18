@@ -1,6 +1,6 @@
-package com.example.addon.hud;
+package com.ninebworks.addon.hud;
 
-import com.example.addon.AddonTemplate;
+import com.ninebworks.addon.AddonTemplate;
 import meteordevelopment.meteorclient.systems.hud.HudElement;
 import meteordevelopment.meteorclient.systems.hud.HudElementInfo;
 import meteordevelopment.meteorclient.systems.hud.HudRenderer;

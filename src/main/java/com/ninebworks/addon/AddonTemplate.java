@@ -1,8 +1,8 @@
-package com.example.addon;
+package com.ninebworks.addon;
 
-import com.example.addon.commands.CommandExample;
-import com.example.addon.hud.HudExample;
-import com.example.addon.modules.ModuleExample;
+import com.ninebworks.addon.commands.CommandExample;
+import com.ninebworks.addon.hud.HudExample;
+import com.ninebworks.addon.modules.ObbyRoof;
 import com.mojang.logging.LogUtils;
 import meteordevelopment.meteorclient.addons.GithubRepo;
 import meteordevelopment.meteorclient.addons.MeteorAddon;
@@ -15,15 +15,15 @@ import org.slf4j.Logger;
 
 public class AddonTemplate extends MeteorAddon {
     public static final Logger LOG = LogUtils.getLogger();
-    public static final Category CATEGORY = new Category("Example");
-    public static final HudGroup HUD_GROUP = new HudGroup("Example");
+    public static final Category CATEGORY = new Category("9bworks");
+    public static final HudGroup HUD_GROUP = new HudGroup("9bworks");
 
     @Override
     public void onInitialize() {
         LOG.info("Initializing Meteor Addon Template");
 
         // Modules
-        Modules.get().add(new ModuleExample());
+        Modules.get().add(new ObbyRoof());
 
         // Commands
         Commands.add(new CommandExample());
@@ -39,11 +39,11 @@ public class AddonTemplate extends MeteorAddon {
 
     @Override
     public String getPackage() {
-        return "com.example.addon";
+        return "com.ninebworks.addon";
     }
 
     @Override
     public GithubRepo getRepo() {
-        return new GithubRepo("MeteorDevelopment", "meteor-addon-template");
+        return new GithubRepo("codemob-dev", "9b-works-obby-roof-addon");
     }
 }

@@ -3,7 +3,7 @@
   "package": "com.example.addon.mixin",
   "compatibilityLevel": "JAVA_21",
   "client": [
-    "ExampleMixin"
+    "com.ninebworks.addon.mixin.ExampleMixin"
   ],
   "injectors": {
     "defaultRequire": 1

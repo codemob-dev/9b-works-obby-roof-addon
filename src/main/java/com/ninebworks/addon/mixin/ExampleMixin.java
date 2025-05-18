@@ -1,6 +1,6 @@
-package com.example.addon.mixin;
+package com.ninebworks.addon.mixin;
 
-import com.example.addon.AddonTemplate;
+import com.ninebworks.addon.AddonTemplate;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.RunArgs;
 import org.spongepowered.asm.mixin.Mixin;
