@@ -13,14 +13,14 @@ import meteordevelopment.meteorclient.systems.modules.Category;
 import meteordevelopment.meteorclient.systems.modules.Modules;
 import org.slf4j.Logger;
 
-public class AddonTemplate extends MeteorAddon {
+public class NinebworksAddon extends MeteorAddon {
     public static final Logger LOG = LogUtils.getLogger();
     public static final Category CATEGORY = new Category("9bworks");
     public static final HudGroup HUD_GROUP = new HudGroup("9bworks");
 
     @Override
     public void onInitialize() {
-        LOG.info("Initializing Meteor Addon Template");
+        LOG.info("Initializing 9bworks");
 
         // Modules
         Modules.get().add(new ObbyRoof());

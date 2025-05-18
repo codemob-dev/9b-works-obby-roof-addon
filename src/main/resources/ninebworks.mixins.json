@@ -1,9 +1,9 @@
 {
   "required": true,
-  "package": "com.example.addon.mixin",
+  "package": "com.ninebworks.addon.mixin",
   "compatibilityLevel": "JAVA_21",
   "client": [
-    "com.ninebworks.addon.mixin.ExampleMixin"
+    "ExampleMixin"
   ],
   "injectors": {
     "defaultRequire": 1

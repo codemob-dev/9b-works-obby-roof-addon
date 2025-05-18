@@ -1,24 +1,24 @@
 {
   "schemaVersion": 1,
-  "id": "addon-template",
+  "id": "ninebworks-addon",
   "version": "${version}",
-  "name": "Addon Template",
-  "description": "An addon template for Meteor Client addons.",
+  "name": "9bworks addon",
+  "description": "An addon for Meteor Client. Used by 9bworks on 9b9t.",
   "authors": [
     "seasnail"
   ],
   "contact": {
-    "repo": "https://github.com/MeteorDevelopment/meteor-addon-template"
+    "repo": "https://github.com/codemob-dev/9b-works-obby-roof-addon"
   },
   "icon": "assets/template/icon.png",
   "environment": "client",
   "entrypoints": {
     "meteor": [
-      "com.ninebworks.addon.AddonTemplate"
+      "com.ninebworks.addon.NinebworksAddon"
     ]
   },
   "mixins": [
-    "addon-template.mixins.json"
+    "ninebworks.mixins.json"
   ],
   "custom": {
     "meteor-client:color": "225,25,25"
