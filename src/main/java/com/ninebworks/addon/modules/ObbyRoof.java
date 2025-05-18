@@ -110,7 +110,11 @@ public class ObbyRoof extends Module {
         if (isFarmingObby()) return;
 
         if (!isBuilding()) {
-            beginBuilding();
+            if (BaritoneAPI.getProvider().getPrimaryBaritone().getBuilderProcess().isPaused()) {
+                BaritoneAPI.getProvider().getPrimaryBaritone().getBuilderProcess().resume();
+            } else {
+                beginBuilding();
+            }
         }
     }
 
@@ -145,6 +149,8 @@ public class ObbyRoof extends Module {
 
     @Override
     public void onDeactivate() {
+        BaritoneAPI.getProvider().getPrimaryBaritone().getFollowProcess().cancel();
+        BaritoneAPI.getProvider().getPrimaryBaritone().getBuilderProcess().pause();
         setPressed(mc.options.jumpKey, false);
     }
 
