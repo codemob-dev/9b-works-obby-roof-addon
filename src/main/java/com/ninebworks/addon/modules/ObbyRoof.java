@@ -1,6 +1,7 @@
 package com.ninebworks.addon.modules;
 
 import baritone.api.BaritoneAPI;
+import baritone.api.IBaritone;
 import baritone.api.schematic.CompositeSchematic;
 import baritone.api.schematic.FillSchematic;
 import baritone.api.schematic.ISchematic;
@@ -32,6 +33,10 @@ public class ObbyRoof extends Module {
     private final HashSet<ChunkPos> completedChunks = new HashSet<>();
 
     private ChunkPos origin;
+
+    private State state;
+    ChunkPos currentTargetChunk;
+
 
     private final Setting<Integer> minObby = sgGeneral.add(new IntSetting.Builder()
         .name("min obby")
@@ -88,34 +93,9 @@ public class ObbyRoof extends Module {
      */
     @EventHandler
     public void onTickEvent(TickEvent.Pre event) {
-        if (isFarmingObby()) {
-            if (numObby() >= maxObby.get()) {
-                Modules.get().get(EChestFarmer.class).toggle();
-                BaritoneAPI.getProvider().getPrimaryBaritone().getBuilderProcess().resume();
-            } else {
-                BaritoneAPI.getProvider().getPrimaryBaritone().getFollowProcess().follow(entity ->
-                    entity instanceof ItemEntity item && item.getStack().isOf(Items.OBSIDIAN));
-                setPressed(mc.options.jumpKey, true);
-            }
-        } else {
-            if (numObby() <= minObby.get()) {
-                Modules.get().get(EChestFarmer.class).toggle();
-                BaritoneAPI.getProvider().getPrimaryBaritone().getBuilderProcess().pause();
-            } else {
-                BaritoneAPI.getProvider().getPrimaryBaritone().getFollowProcess().cancel();
-                setPressed(mc.options.jumpKey, false);
-            }
-        }
+        state.tick(this);
 
         if (isFarmingObby()) return;
-
-        if (!isBuilding()) {
-            if (BaritoneAPI.getProvider().getPrimaryBaritone().getBuilderProcess().isPaused()) {
-                BaritoneAPI.getProvider().getPrimaryBaritone().getBuilderProcess().resume();
-            } else {
-                beginBuilding();
-            }
-        }
     }
 
     private void beginBuilding() {
@@ -131,7 +111,7 @@ public class ObbyRoof extends Module {
         schematic.put(air, 0, 1, 0);
 
         BaritoneAPI.getProvider().getPrimaryBaritone().getBuilderProcess().build("Obby roof", schematic, min);
-        completedChunks.add(pos);
+        currentTargetChunk = pos;
     }
 
     private ChunkPos findNextChunk(int searchRadius) {
@@ -145,13 +125,12 @@ public class ObbyRoof extends Module {
     public void onActivate() {
         assert this.mc.player != null;
         origin = this.mc.player.getChunkPos();
+        setState(State.Idle);
     }
 
     @Override
     public void onDeactivate() {
-        BaritoneAPI.getProvider().getPrimaryBaritone().getFollowProcess().cancel();
-        BaritoneAPI.getProvider().getPrimaryBaritone().getBuilderProcess().pause();
-        setPressed(mc.options.jumpKey, false);
+        setState(null, true);
     }
 
     private boolean isAvailable(ChunkPos pos) {
@@ -162,18 +141,28 @@ public class ObbyRoof extends Module {
         return findNextChunk(0);
     }
 
+    public void setState(State state) {
+        setState(state, false);
+    }
+
+    public void setState(State state, boolean abort) {
+        if (this.state != null) {
+            this.state.end(this, abort);
+        }
+        this.state = state;
+        if (this.state != null) {
+            this.state.start(this);
+        }
+    }
+
+    public State getState() {
+        return state;
+    }
+
 
     private int numObby() {
         assert this.mc.player != null;
         return this.mc.player.getInventory().count(Items.OBSIDIAN);
-    }
-
-    private boolean isBuilding() {
-        return BaritoneAPI
-            .getProvider()
-            .getPrimaryBaritone()
-            .getBuilderProcess()
-            .isActive();
     }
 
     private boolean isFarmingObby() {
@@ -183,5 +172,81 @@ public class ObbyRoof extends Module {
     private void setPressed(KeyBinding key, boolean pressed) {
         key.setPressed(pressed);
         Input.setKeyState(key, pressed);
+    }
+
+    public enum State {
+        Idle {
+            @Override
+            protected void tick(ObbyRoof module) {
+                module.setState(State.BuildPlatform);
+            }
+        },
+        FarmEchests {
+            @Override
+            protected void start(ObbyRoof module) {
+                BaritoneAPI.getProvider().getPrimaryBaritone().getBuilderProcess().pause();
+                if (!Modules.get().get(EChestFarmer.class).isActive()) {
+                    Modules.get().get(EChestFarmer.class).toggle();
+                }
+                BaritoneAPI.getProvider().getPrimaryBaritone().getFollowProcess().follow(entity ->
+                    entity instanceof ItemEntity item && item.getStack().isOf(Items.OBSIDIAN));
+                module.setPressed(module.mc.options.jumpKey, true);
+            }
+
+            @Override
+            protected void tick(ObbyRoof module) {
+                if (module.numObby() >= module.minObby.get()) {
+                    module.setState(State.BuildPlatform);
+                }
+            }
+
+            @Override
+            protected void end(ObbyRoof module, boolean aborted) {
+                BaritoneAPI.getProvider().getPrimaryBaritone().getFollowProcess().cancel();
+                Modules.get().get(EChestFarmer.class).toggle();
+                module.setPressed(module.mc.options.jumpKey, false);
+            }
+        },
+        BuildPlatform {
+            @Override
+            protected void start(ObbyRoof module) {
+                IBaritone baritone = BaritoneAPI.getProvider().getPrimaryBaritone();
+                if (baritone.getBuilderProcess().isPaused()) {
+                    baritone.getBuilderProcess().resume();
+                } else {
+                    module.beginBuilding();
+                }
+            }
+
+            @Override
+            protected void tick(ObbyRoof module) {
+                if (module.numObby() <= module.minObby.get()) {
+                    module.setState(State.FarmEchests);
+                }
+
+                if (!BaritoneAPI
+                    .getProvider()
+                    .getPrimaryBaritone()
+                    .getBuilderProcess()
+                    .isActive()) {
+                    module.setState(State.Idle);
+                }
+            }
+
+            @Override
+            protected void end(ObbyRoof module, boolean aborted) {
+                IBaritone baritone = BaritoneAPI.getProvider().getPrimaryBaritone();
+                if (aborted) {
+                    baritone.getPathingBehavior().cancelEverything();
+                } else {
+                    module.completedChunks.add(module.currentTargetChunk);
+                }
+            }
+        };
+        protected void start(ObbyRoof module) {}
+
+        protected void tick(ObbyRoof module) {}
+
+        protected void end(ObbyRoof module, boolean aborted) {}
     }
 }
