@@ -182,20 +182,57 @@ public class ObbyRoof extends Module {
             }
         },
         FarmEchests {
+            public enum EchestState {
+                Farm,
+                Pickup,
+                Mine
+            }
+
+            private long counter = 0;
+            private EchestState state = EchestState.Farm;
             @Override
             protected void start(ObbyRoof module) {
                 BaritoneAPI.getProvider().getPrimaryBaritone().getBuilderProcess().pause();
-                if (!Modules.get().get(EChestFarmer.class).isActive()) {
-                    Modules.get().get(EChestFarmer.class).toggle();
-                }
-                BaritoneAPI.getProvider().getPrimaryBaritone().getFollowProcess().follow(entity ->
-                    entity instanceof ItemEntity item && item.getStack().isOf(Items.OBSIDIAN));
-                module.setPressed(module.mc.options.jumpKey, true);
             }
 
             @Override
             protected void tick(ObbyRoof module) {
-                if (module.numObby() >= module.minObby.get()) {
+                IBaritone baritone = BaritoneAPI.getProvider().getPrimaryBaritone();
+                boolean echestActive = false;
+                counter++;
+                switch (state) {
+                    case Farm -> {
+                        baritone.getFollowProcess().cancel();
+                        echestActive = true;
+                        if (counter > 200) {
+                            state = EchestState.Mine;
+                            counter = 0;
+                        }
+                    }
+                    case Mine -> {
+                        if (!baritone.getMineProcess().isActive() || counter > 30) {
+                            state = EchestState.Pickup;
+                            counter = 0;
+                        }
+                    }
+                    case Pickup -> {
+                        baritone.getMineProcess().cancel();
+                        if (!baritone.getFollowProcess().isActive()) {
+                            baritone.getFollowProcess().follow(entity ->
+                                entity instanceof ItemEntity item && item.getStack().isOf(Items.OBSIDIAN));
+                        }
+                        if (counter > 30) {
+                            state = EchestState.Farm;
+                            baritone.getMineProcess().mine(module.numObby() + 8, Blocks.ENDER_CHEST);
+                            counter = 0;
+                        }
+                    }
+                }
+                if (Modules.get().get(EChestFarmer.class).isActive() != echestActive) {
+                    Modules.get().get(EChestFarmer.class).toggle();
+                }
+
+                if (module.numObby() >= module.maxObby.get()) {
                     module.setState(State.BuildPlatform);
                 }
             }
